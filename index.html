@@ -2,12 +2,12 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Dashboard - Kota Bengkulu</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard Divisi Kapal Perang</title>
   <link rel="icon" href="https://upload.wikimedia.org/wikipedia/commons/9/98/Kota_Bengkulu.png" />
   
   <style>
-    /* Reset dan Layout Dasar */
+    /* Reset Dasar */
     * {
       box-sizing: border-box;
     }
@@ -19,10 +19,10 @@
       height: 100%;
       background-color: #f4f4f7;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-      overflow: hidden; /* Mencegah scroll ganda pada container luar */
+      overflow: hidden; /* Mencegah scroll pada body utama */
     }
 
-    /* Container utama */
+    /* Container Aplikasi */
     .app-container {
       position: relative;
       width: 100%;
@@ -32,25 +32,25 @@
       overflow: hidden;
     }
 
-    /* Wrapper untuk Iframe agar bisa di-scale */
+    /* Wrapper untuk menangani penskalaan otomatis */
     #iframe-wrapper {
+      position: relative;
       width: 100%;
       height: 100%;
-      overflow: auto; /* Memungkinkan scroll vertikal jika konten sangat panjang */
+      overflow-x: hidden; /* Pastikan tidak ada scroll horizontal */
+      overflow-y: auto;   /* Izinkan scroll vertikal jika dashboard panjang */
       -webkit-overflow-scrolling: touch;
-      display: flex;
-      justify-content: center;
-      align-items: flex-start;
     }
 
-    /* Styling Iframe */
+    /* Iframe Styling */
     iframe {
+      display: block;
       border: none;
       width: 100%;
       height: 100%;
-      transition: opacity 0.3s ease;
       opacity: 0;
-      transform-origin: top left; /* Titik tumpu pengecilan di pojok kiri atas */
+      transition: opacity 0.3s ease;
+      transform-origin: 0 0;
     }
 
     iframe.loaded {
@@ -74,23 +74,21 @@
     }
 
     .loader {
-      width: 48px;
-      height: 48px;
-      border: 5px solid #e2e2e2;
-      border-bottom-color: #007bff;
+      width: 40px;
+      height: 40px;
+      border: 4px solid #f3f3f3;
+      border-top: 4px solid #007bff;
       border-radius: 50%;
-      display: inline-block;
-      animation: rotation 1s linear infinite;
+      animation: spin 1s linear infinite;
     }
 
     .loader-text {
       margin-top: 15px;
-      color: #555;
+      color: #666;
       font-size: 14px;
-      font-weight: 500;
     }
 
-    @keyframes rotation {
+    @keyframes spin {
       0% { transform: rotate(0deg); }
       100% { transform: rotate(360deg); }
     }
@@ -98,6 +96,7 @@
     .hidden {
       opacity: 0;
       visibility: hidden;
+      pointer-events: none;
     }
   </style>
 </head>
@@ -107,7 +106,7 @@
     <!-- Layar Pemuatan -->
     <div id="loader" class="loader-wrapper">
       <div class="loader"></div>
-      <div class="loader-text">Memuat Dashboard...</div>
+      <div class="loader-text">Menyiapkan Dashboard...</div>
     </div>
 
     <!-- Konten Utama -->
@@ -115,6 +114,7 @@
       <iframe
         id="app-frame"
         src="https://script.google.com/macros/s/AKfycbwG9pT_7xyRw3mfkMIIqj1By-9TNCq2hlpIvF3XgR2us0JMufnmCOGIvEDRL8CoBFGU/exec"
+        scrolling="no"
         allowfullscreen="true"
         allow="fullscreen; camera; microphone; display-capture; geolocation;">
       </iframe>
@@ -123,50 +123,46 @@
 
   <script>
     const iframe = document.getElementById('app-frame');
-    const wrapper = document.getElementById('iframe-wrapper');
     const loader = document.getElementById('loader');
 
-    // Fungsi untuk menyesuaikan ukuran (scaling)
-    function scaleIframe() {
+    function adjustView() {
       const windowWidth = window.innerWidth;
-      // Tentukan lebar target dashboard (misal 1000px adalah lebar standar dashboard desktop)
-      // Jika layar lebih kecil dari ini, kita akan mengecilkannya.
-      const targetWidth = 1000; 
-
-      if (windowWidth < targetWidth) {
-        const scale = windowWidth / targetWidth;
+      
+      // Jika di HP (layar kecil), kita paksa dashboard menggunakan lebar desktop (misal 1280px)
+      // lalu kita kecilkan (zoom out) agar pas dengan lebar HP.
+      if (windowWidth < 1024) { 
+        const desktopWidth = 1280; // Standar lebar dashboard agar tidak berantakan
+        const scale = windowWidth / desktopWidth;
         
-        // Terapkan scaling
-        iframe.style.width = targetWidth + 'px';
-        iframe.style.height = (100 / scale) + '%';
+        iframe.style.width = desktopWidth + 'px';
+        iframe.style.height = (window.innerHeight / scale) + 'px';
         iframe.style.transform = `scale(${scale})`;
       } else {
-        // Reset jika di layar lebar
+        // Jika di Desktop, gunakan ukuran standar
         iframe.style.width = '100%';
         iframe.style.height = '100%';
         iframe.style.transform = 'none';
       }
     }
 
-    // Jalankan fungsi saat window di-resize atau pertama kali dimuat
-    window.addEventListener('resize', scaleIframe);
-    scaleIframe();
+    // Jalankan saat pertama kali dan saat layar diputar/resize
+    window.addEventListener('resize', adjustView);
+    adjustView();
 
-    // Sembunyikan loader setelah iframe siap
     iframe.onload = function() {
       loader.classList.add('hidden');
       iframe.classList.add('loaded');
-      scaleIframe(); // Pastikan scale dihitung ulang setelah konten masuk
+      adjustView();
     };
 
-    // Timeout keamanan
+    // Timeout keamanan jika koneksi lambat
     setTimeout(() => {
       if (!loader.classList.contains('hidden')) {
         loader.classList.add('hidden');
         iframe.classList.add('loaded');
-        scaleIframe();
+        adjustView();
       }
-    }, 8000);
+    }, 10000);
   </script>
 </body>
 </html>
