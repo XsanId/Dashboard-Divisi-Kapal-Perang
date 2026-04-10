@@ -2,32 +2,171 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>DashBoard Divisi Kapal Perang</title>
-  <link rel="icon" href="https://id.wikipedia.org/wiki/Berkas:PT-PAL.svg" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Dashboard Divisi Kapal Perang</title>
+  <link rel="icon" href="https://upload.wikimedia.org/wikipedia/commons/9/98/Kota_Bengkulu.png" />
+  
   <style>
+    /* Reset dan Layout Dasar */
+    * {
+      box-sizing: border-box;
+    }
+    
     html, body {
       margin: 0;
       padding: 0;
       width: 100%;
       height: 100%;
-      background-color: #eee;
-      overflow: hidden; /* Mencegah scroll ganda */
+      background-color: #f4f4f7;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      overflow: hidden; /* Mencegah scroll ganda pada container luar */
     }
 
+    /* Container utama */
+    .app-container {
+      position: relative;
+      width: 100%;
+      height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* Wrapper untuk Iframe agar bisa di-scale */
+    #iframe-wrapper {
+      width: 100%;
+      height: 100%;
+      overflow: auto; /* Memungkinkan scroll vertikal jika konten sangat panjang */
+      -webkit-overflow-scrolling: touch;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+    }
+
+    /* Styling Iframe */
+    iframe {
+      border: none;
+      width: 100%;
+      height: 100%;
+      transition: opacity 0.3s ease;
+      opacity: 0;
+      transform-origin: top left; /* Titik tumpu pengecilan di pojok kiri atas */
+    }
+
+    iframe.loaded {
+      opacity: 1;
+    }
+
+    /* Loading Spinner */
+    .loader-wrapper {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: #ffffff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 10;
+      transition: opacity 0.5s ease, visibility 0.5s;
+    }
+
+    .loader {
+      width: 48px;
+      height: 48px;
+      border: 5px solid #e2e2e2;
+      border-bottom-color: #007bff;
+      border-radius: 50%;
+      display: inline-block;
+      animation: rotation 1s linear infinite;
+    }
+
+    .loader-text {
+      margin-top: 15px;
+      color: #555;
+      font-size: 14px;
+      font-weight: 500;
+    }
+
+    @keyframes rotation {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .hidden {
+      opacity: 0;
+      visibility: hidden;
+    }
   </style>
 </head>
 <body>
-  <div class="iframe-container">
-    <iframe
-      id="app"
-      src="https://script.google.com/macros/s/AKfycbwG9pT_7xyRw3mfkMIIqj1By-9TNCq2hlpIvF3XgR2us0JMufnmCOGIvEDRL8CoBFGU/exec"
-      scrolling="yes"
-      allowfullscreen="true"
-      webkitallowfullscreen="true"
-      mozallowfullscreen="true"
-      allow="fullscreen; camera; microphone; display-capture; geolocation;">
-    </iframe>
+
+  <div class="app-container">
+    <!-- Layar Pemuatan -->
+    <div id="loader" class="loader-wrapper">
+      <div class="loader"></div>
+      <div class="loader-text">Memuat Dashboard...</div>
+    </div>
+
+    <!-- Konten Utama -->
+    <div id="iframe-wrapper">
+      <iframe
+        id="app-frame"
+        src="https://script.google.com/macros/s/AKfycbwG9pT_7xyRw3mfkMIIqj1By-9TNCq2hlpIvF3XgR2us0JMufnmCOGIvEDRL8CoBFGU/exec"
+        allowfullscreen="true"
+        allow="fullscreen; camera; microphone; display-capture; geolocation;">
+      </iframe>
+    </div>
   </div>
+
+  <script>
+    const iframe = document.getElementById('app-frame');
+    const wrapper = document.getElementById('iframe-wrapper');
+    const loader = document.getElementById('loader');
+
+    // Fungsi untuk menyesuaikan ukuran (scaling)
+    function scaleIframe() {
+      const windowWidth = window.innerWidth;
+      // Tentukan lebar target dashboard (misal 1000px adalah lebar standar dashboard desktop)
+      // Jika layar lebih kecil dari ini, kita akan mengecilkannya.
+      const targetWidth = 1000; 
+
+      if (windowWidth < targetWidth) {
+        const scale = windowWidth / targetWidth;
+        
+        // Terapkan scaling
+        iframe.style.width = targetWidth + 'px';
+        iframe.style.height = (100 / scale) + '%';
+        iframe.style.transform = `scale(${scale})`;
+      } else {
+        // Reset jika di layar lebar
+        iframe.style.width = '100%';
+        iframe.style.height = '100%';
+        iframe.style.transform = 'none';
+      }
+    }
+
+    // Jalankan fungsi saat window di-resize atau pertama kali dimuat
+    window.addEventListener('resize', scaleIframe);
+    scaleIframe();
+
+    // Sembunyikan loader setelah iframe siap
+    iframe.onload = function() {
+      loader.classList.add('hidden');
+      iframe.classList.add('loaded');
+      scaleIframe(); // Pastikan scale dihitung ulang setelah konten masuk
+    };
+
+    // Timeout keamanan
+    setTimeout(() => {
+      if (!loader.classList.contains('hidden')) {
+        loader.classList.add('hidden');
+        iframe.classList.add('loaded');
+        scaleIframe();
+      }
+    }, 8000);
+  </script>
 </body>
 </html>
